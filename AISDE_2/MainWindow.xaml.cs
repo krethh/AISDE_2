@@ -23,6 +23,8 @@ namespace AISDE_2
         public MainWindow()
         {
             InitializeComponent();
+            Player simulator = new Player();
+
         }
     }
 }
