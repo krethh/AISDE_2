@@ -20,11 +20,25 @@ namespace AISDE_2
     /// </summary>
     public partial class MainWindow : Window
     {
+        Player simulator;
+
         public MainWindow()
         {
             InitializeComponent();
-            Player simulator = new Player();
+            simulator = new Player();
+            simulator.LogCreated += UpdateLogWindow;
+            simulator.Simulate(150);
+        }
 
+        private void UpdateLogWindow(object sender, LogEventArgs e)
+        {
+            LogTextBox.Text += e.Message + '\n';
+        }
+
+        private void PlotButton_Click(object sender, RoutedEventArgs e)
+        {
+            PlotWindow w = new PlotWindow(simulator.YGraphValues);
+            w.Show();
         }
     }
 }

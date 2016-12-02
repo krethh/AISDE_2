@@ -12,3 +12,5 @@ C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\AIS
 C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\AISDE_2.csproj.GenerateResource.Cache
 C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\AISDE_2.exe
 C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\AISDE_2.pdb
+C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\PlotWindow.g.cs
+C:\Users\Paweł Kulig\Desktop\Studia\AISDE\AISDE_2\AISDE_2\AISDE_2\obj\Debug\PlotWindow.baml
