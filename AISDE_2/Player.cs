@@ -56,7 +56,7 @@ namespace AISDE_2
                     + ", buffer size: " + Truncate(BufferSize.ToString()) + "sec."
                     });
 
-                    YGraphValues.Add(BufferSize);
+                    YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
                     CurrentTime += CHUNK_LENGTH;
                 }
                 /// pobieranie chunka w momencie zmiany warunków na łączu modelujemy przez pobieranie go z przepustowością równą
@@ -64,12 +64,19 @@ namespace AISDE_2
                 var nextBandwidth = Bandwidth + nextEvent.BandwidthChange;
                 var averageBandwidth = (Bandwidth + nextBandwidth) / 2;
 
-                BufferSize += (averageBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
+                if (BufferSize > 30 && averageBandwidth > 300)
+                    usedBandwidth = server.VideoSize;
+                else usedBandwidth = averageBandwidth;
+
+                BufferSize += (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
                 OnLogCreated(new LogEventArgs
                 {
-                    Message = "Time: " + CurrentTime + ">> Chunk downloaded, length: " + CHUNK_LENGTH + ", bandwidth: " + averageBandwidth + ", used bandwidth: " + averageBandwidth + ", size: " + server.VideoSize * CHUNK_LENGTH
+                    Message = "Time: " + CurrentTime + ">> Chunk downloaded, length: " + CHUNK_LENGTH + ", bandwidth: " + averageBandwidth + ", used bandwidth: " + usedBandwidth + ", size: " + server.VideoSize * CHUNK_LENGTH
                     + ", buffer size: " + Truncate(BufferSize.ToString()) + "sec."
                 });
+
+                CurrentTime += CHUNK_LENGTH;
+                YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
 
                 Bandwidth += nextEvent.BandwidthChange;
             }

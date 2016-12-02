@@ -5,6 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AISDE_2"
         mc:Ignorable="d"
-        Title="PlotWindow" Height="800" Width="800" Background="White">
-    <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="749" Margin="10,10,0,0" VerticalAlignment="Top" Width="772" Grid.ColumnSpan="6" Background="#FFEAEAEA"/>
+        Title="PlotWindow" Height="974.85" Width="919" Background="White">
+    <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="749" Margin="87,72,0,0" VerticalAlignment="Top" Width="772" Grid.ColumnSpan="6" Background="White">
+        <Label x:Name="XAxisEndLabel" Content="Label" Canvas.Left="672" Canvas.Top="683"/>
+        <Label x:Name="XAxisMiddleLabel" Content="Label" Canvas.Left="340" Canvas.Top="683"/>
+        <Label x:Name="YAxisTopLabel" Content="Label" Canvas.Left="61" Canvas.Top="30"/>
+    </Canvas>
+
 </Window>
