@@ -18,7 +18,6 @@ namespace AISDE_2
         public double VideoStreamSize { get; set; } // ile kilobajtów to jedna sekunda
         public double BufferSize { get; set; } // ile sekund video mamy już zbuforowane
         public const double CHUNK_LENGTH = 2;
-        public List<double> XGraphValues { get; set; }
         public List<double> YGraphValues { get; set; }
         public EventHandler<LogEventArgs> LogCreated;
 
@@ -26,7 +25,7 @@ namespace AISDE_2
         {
             Events = new PriorityQueue<Event>();
             CurrentTime = 0;
-            Bandwidth = 300; //domyślnie ustawiam pierwszą przepustowość łącza na 200
+            Bandwidth = 275; //domyślna przepustowość łącza
             BufferSize = 0;
             YGraphValues = new List<double>();
             Console.WriteLine();
@@ -34,12 +33,14 @@ namespace AISDE_2
 
         public void Simulate(double time)
         {
-            GenerateEvents(time);
             CurrentTime = 0;
             Server server = new Server();
 
+            Events.Enqueue(new Event { Time = RandomNumberFromExpDistribution(5), BandwidthChange = Event.NextBandwidthChange() });
+            bool simulationOver = false;
+
             var usedBandwidth = Bandwidth;
-            while (Events.Count != 0)
+            while (CurrentTime < time)
             {
                 Event nextEvent = Events.Dequeue();
                 while ((nextEvent.Time - CurrentTime) % CHUNK_LENGTH > 0) // tak długo jak możemy pobierać pełne chunki długości 2 sek.
@@ -49,7 +50,11 @@ namespace AISDE_2
                         usedBandwidth = server.VideoSize;
                     else usedBandwidth = Bandwidth;
 
-                    BufferSize += (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
+                    if (BufferSize + (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize > 0)
+                        BufferSize += (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
+                    else
+                        BufferSize = 0;
+                    
                     OnLogCreated(new LogEventArgs
                     {
                         Message = "Time: " + CurrentTime + ">> Chunk downloaded, length: " + CHUNK_LENGTH + ", bandwidth: " + Bandwidth + ", used bandwidth: " + usedBandwidth + ", size: " + server.VideoSize * CHUNK_LENGTH
@@ -58,12 +63,22 @@ namespace AISDE_2
 
                     YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
                     CurrentTime += CHUNK_LENGTH;
+
+                    if (CurrentTime > time)
+                    {
+                        simulationOver = true;
+                        break;
+                    }
                 }
+                if (simulationOver)
+                    break;
+
                 /// pobieranie chunka w momencie zmiany warunków na łączu modelujemy przez pobieranie go z przepustowością równą
                 /// średniej z przepustowości po i przed zmianą
                 var nextBandwidth = Bandwidth + nextEvent.BandwidthChange;
                 var averageBandwidth = (Bandwidth + nextBandwidth) / 2;
 
+                /// jeżeli bufor jest pełny to nie pobieraj więcej niz potrzeba (tak żeby rozmiar bufora zawsze był ~30 sek)
                 if (BufferSize > 30 && averageBandwidth > 300)
                     usedBandwidth = server.VideoSize;
                 else usedBandwidth = averageBandwidth;
@@ -79,21 +94,7 @@ namespace AISDE_2
                 YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
 
                 Bandwidth += nextEvent.BandwidthChange;
-            }
-        }
-
-        /// <summary>
-        /// Generuje zdarzenia do kolejki zdarzeń.
-        /// </summary>
-        /// <param name="time">Czas trwania wszystkich zdarzeń.</param>
-        public void GenerateEvents(double time)
-        {
-            double timeToElapse = 0;
-            while(timeToElapse < time)
-            {
-                double nextTime = RandomNumberFromExpDistribution(5);
-                Events.Enqueue(new Event { Time = timeToElapse + nextTime , BandwidthChange = Event.NextBandwidthChange() });
-                timeToElapse += nextTime;
+                Events.Enqueue(new Event { Time = RandomNumberFromExpDistribution(5) + CurrentTime, BandwidthChange = Event.NextBandwidthChange() });
             }
         }
 
