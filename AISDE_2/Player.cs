@@ -19,15 +19,17 @@ namespace AISDE_2
         public double BufferSize { get; set; } // ile sekund video mamy już zbuforowane
         public const double CHUNK_LENGTH = 2;
         public List<double> YGraphValues { get; set; }
+        public List<double> XGraphValues { get; set; }
         public EventHandler<LogEventArgs> LogCreated;
 
         public Player()
         {
             Events = new PriorityQueue<Event>();
             CurrentTime = 0;
-            Bandwidth = 275; //domyślna przepustowość łącza
+            Bandwidth = 300; //domyślna przepustowość łącza
             BufferSize = 0;
             YGraphValues = new List<double>();
+            XGraphValues = new List<double>();
             Console.WriteLine();
         }
 
@@ -36,65 +38,65 @@ namespace AISDE_2
             CurrentTime = 0;
             Server server = new Server();
 
-            Events.Enqueue(new Event { Time = RandomNumberFromExpDistribution(5), BandwidthChange = Event.NextBandwidthChange() });
-            bool simulationOver = false;
+            Events.Enqueue(new BandwidthEvent { Time = RandomNumberFromExpDistribution(5), BandwidthChange = BandwidthEvent.NextBandwidthChange() });
+            Events.Enqueue(new DownloadingFinishedEvent { Time = CHUNK_LENGTH * server.VideoSize / Bandwidth });
 
-            var usedBandwidth = Bandwidth;
             while (CurrentTime < time)
             {
                 Event nextEvent = Events.Dequeue();
-                while ((nextEvent.Time - CurrentTime) % CHUNK_LENGTH > 0) // tak długo jak możemy pobierać pełne chunki długości 2 sek.
-                {
-                    /// po to, żeby rozmiar bufora nie rosnął powyżej 30
-                    if (BufferSize > 30 && Bandwidth > 300) 
-                        usedBandwidth = server.VideoSize;
-                    else usedBandwidth = Bandwidth;
+                var bufferGone = nextEvent.Time - CurrentTime;
 
-                    if (BufferSize + (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize > 0)
-                        BufferSize += (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
-                    else
-                        BufferSize = 0;
-                    
+                if (nextEvent as BandwidthEvent != null)
+                {
+                    BandwidthEvent bandwidthEvent = (BandwidthEvent)nextEvent;
+                    BufferSize -= bufferGone;
+                    BufferSize = BufferSize < 0 ? 0 : BufferSize;
+
+                    CurrentTime = bandwidthEvent.Time;
+                    Bandwidth += bandwidthEvent.BandwidthChange;
+                    YGraphValues.Add(BufferSize);
+
                     OnLogCreated(new LogEventArgs
                     {
-                        Message = "Time: " + CurrentTime + ">> Chunk downloaded, length: " + CHUNK_LENGTH + ", bandwidth: " + Bandwidth + ", used bandwidth: " + usedBandwidth + ", size: " + server.VideoSize * CHUNK_LENGTH
-                    + ", buffer size: " + Truncate(BufferSize.ToString()) + "sec."
+                        Message = "Bandwidth change, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
                     });
 
-                    YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
-                    CurrentTime += CHUNK_LENGTH;
-
-                    if (CurrentTime > time)
+                    Events.Enqueue(new BandwidthEvent
                     {
-                        simulationOver = true;
-                        break;
-                    }
+                        Time = CurrentTime + RandomNumberFromExpDistribution(10),
+                        BandwidthChange = BandwidthEvent.NextBandwidthChange()
+                    });
                 }
-                if (simulationOver)
-                    break;
 
-                /// pobieranie chunka w momencie zmiany warunków na łączu modelujemy przez pobieranie go z przepustowością równą
-                /// średniej z przepustowości po i przed zmianą
-                var nextBandwidth = Bandwidth + nextEvent.BandwidthChange;
-                var averageBandwidth = (Bandwidth + nextBandwidth) / 2;
-
-                /// jeżeli bufor jest pełny to nie pobieraj więcej niz potrzeba (tak żeby rozmiar bufora zawsze był ~30 sek)
-                if (BufferSize > 30 && averageBandwidth > 300)
-                    usedBandwidth = server.VideoSize;
-                else usedBandwidth = averageBandwidth;
-
-                BufferSize += (usedBandwidth * CHUNK_LENGTH - server.RequestChunk(CHUNK_LENGTH)) / server.VideoSize;
-                OnLogCreated(new LogEventArgs
+                if (nextEvent as DownloadingFinishedEvent != null)
                 {
-                    Message = "Time: " + CurrentTime + ">> Chunk downloaded, length: " + CHUNK_LENGTH + ", bandwidth: " + averageBandwidth + ", used bandwidth: " + usedBandwidth + ", size: " + server.VideoSize * CHUNK_LENGTH
-                    + ", buffer size: " + Truncate(BufferSize.ToString()) + "sec."
-                });
+                    DownloadingFinishedEvent downloadingEvent = (DownloadingFinishedEvent)nextEvent;
+                    BufferSize -= bufferGone;
+                    BufferSize = BufferSize < 0 ? 0 : BufferSize;
 
-                CurrentTime += CHUNK_LENGTH;
-                YGraphValues.Add(BufferSize > 0 ? BufferSize : 0);
+                    CurrentTime = downloadingEvent.Time;
+                    BufferSize += CHUNK_LENGTH;
+                    YGraphValues.Add(BufferSize);
 
-                Bandwidth += nextEvent.BandwidthChange;
-                Events.Enqueue(new Event { Time = RandomNumberFromExpDistribution(5) + CurrentTime, BandwidthChange = Event.NextBandwidthChange() });
+                    OnLogCreated(new LogEventArgs
+                    {
+                        Message = "Downloaded, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
+                    });
+
+                    var surplus = (BufferSize - 30 > 0) ? BufferSize - 30 : 0;
+                    CurrentTime += surplus;
+                    BufferSize -= surplus;
+
+                    OnLogCreated(new LogEventArgs
+                    {
+                        Message = "Request, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
+                    });
+
+                    Events.Enqueue(new DownloadingFinishedEvent
+                    {
+                        Time = CHUNK_LENGTH * server.VideoSize / Bandwidth + CurrentTime
+                    });
+                }
             }
         }
 

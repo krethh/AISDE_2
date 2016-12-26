@@ -27,7 +27,7 @@ namespace AISDE_2
             InitializeComponent();
             simulator = new Player();
             simulator.LogCreated += UpdateLogWindow;
-            simulator.Simulate(700);
+            simulator.Simulate(300);
         }
 
         private void UpdateLogWindow(object sender, LogEventArgs e)

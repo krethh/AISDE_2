@@ -55,6 +55,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BandwidthEvent.cs" />
+    <Compile Include="DownloadingFinishedEvent.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="LogEventArgs.cs" />
     <Compile Include="PlotWindow.xaml.cs">
