@@ -18,8 +18,7 @@ namespace AISDE_2
         public double VideoStreamSize { get; set; } // ile kilobajtów to jedna sekunda
         public double BufferSize { get; set; } // ile sekund video mamy już zbuforowane
         public const double CHUNK_LENGTH = 2;
-        public List<double> YGraphValues { get; set; }
-        public List<double> XGraphValues { get; set; }
+        public List<Tuple<double, char>> YGraphValues { get; set; } // tak aby w wykresie było wiadomo czy dany pomiar jest przy okazji pobrania 'd' czy zmiany przepustowości 'b'
         public EventHandler<LogEventArgs> LogCreated;
 
         public Player()
@@ -28,8 +27,7 @@ namespace AISDE_2
             CurrentTime = 0;
             Bandwidth = 300; //domyślna przepustowość łącza
             BufferSize = 0;
-            YGraphValues = new List<double>();
-            XGraphValues = new List<double>();
+            YGraphValues = new List<Tuple<double, char>>();
             Console.WriteLine();
         }
 
@@ -54,7 +52,7 @@ namespace AISDE_2
 
                     CurrentTime = bandwidthEvent.Time;
                     Bandwidth += bandwidthEvent.BandwidthChange;
-                    YGraphValues.Add(BufferSize);
+                    YGraphValues.Add(new Tuple<double,char>( BufferSize, 'b'));
 
                     OnLogCreated(new LogEventArgs
                     {
@@ -68,7 +66,7 @@ namespace AISDE_2
                     });
                 }
 
-                if (nextEvent as DownloadingFinishedEvent != null)
+                else if (nextEvent as DownloadingFinishedEvent != null)
                 {
                     DownloadingFinishedEvent downloadingEvent = (DownloadingFinishedEvent)nextEvent;
                     BufferSize -= bufferGone;
@@ -76,7 +74,7 @@ namespace AISDE_2
 
                     CurrentTime = downloadingEvent.Time;
                     BufferSize += CHUNK_LENGTH;
-                    YGraphValues.Add(BufferSize);
+                    YGraphValues.Add(new Tuple<double, char>(BufferSize, 'd'));
 
                     OnLogCreated(new LogEventArgs
                     {

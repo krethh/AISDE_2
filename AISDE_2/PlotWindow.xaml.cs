@@ -19,9 +19,9 @@ namespace AISDE_2
     /// </summary>
     public partial class PlotWindow : Window
     {
-        public List<double> YVector { get; set; }
+        public List<Tuple<double,char>> YVector { get; set; }
 
-        public PlotWindow(List<double> YVector)
+        public PlotWindow(List<Tuple<double, char>> YVector)
         {
             this.YVector = YVector;
             InitializeComponent();
@@ -100,12 +100,12 @@ namespace AISDE_2
                 point.Height = 5;
                 point.Width = 5;
 
-                point.Fill = Brushes.Red;
+                point.Fill = YVector[YVectorIndex].Item2 == 'd' ? Brushes.Red : Brushes.Blue;
 
                 canvas.Children.Add(point);
 
                 Canvas.SetLeft(point, i);
-                Canvas.SetTop(point, 30 + (30 - YVector[YVectorIndex++]) * (640 / 30));
+                Canvas.SetTop(point, 30 + (30 - YVector[YVectorIndex++].Item1) * (640 / 30));
             }
         }
     }
