@@ -9,7 +9,7 @@ namespace AISDE_2
     public class BandwidthEvent : Event
     {
         public double BandwidthChange { get; set; }
-        private static double[] BandwidthChanges = { 100, -100 };
+        private static double[] BandwidthChanges = { 100, -150, 200, 300, -500, 50 };
         private static int BandwidthChangeIndex = 0;
 
 

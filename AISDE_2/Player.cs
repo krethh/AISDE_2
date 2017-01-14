@@ -17,7 +17,7 @@ namespace AISDE_2
         public double Bandwidth { get; set; } // ile możemy pobrać na sekundę
         public double VideoStreamSize { get; set; } // ile kilobajtów to jedna sekunda
         public double BufferSize { get; set; } // ile sekund video mamy już zbuforowane
-        public double MeasurementSamplingRate { get; set; } = 0.2; // co ile zbieramy próbki z bufora
+        public double MeasurementSamplingRate { get; set; } = 0.05; // co ile zbieramy próbki z bufora
         public const double CHUNK_LENGTH = 2;
         public List<double> YGraphValues { get; set; }
         public EventHandler<LogEventArgs> LogCreated;
@@ -26,7 +26,7 @@ namespace AISDE_2
         {
             Events = new PriorityQueue<Event>();
             CurrentTime = 0;
-            Bandwidth = 300; //domyślna przepustowość łącza
+            Bandwidth = 450; //domyślna przepustowość łącza
             BufferSize = 0;
             YGraphValues = new List<double>();
             Console.WriteLine();
@@ -41,11 +41,13 @@ namespace AISDE_2
             Events.Enqueue(new DownloadingFinishedEvent { Time = CHUNK_LENGTH * server.VideoSize / Bandwidth });
             Events.Enqueue(new MeasurementEvent { Time = 0 });
 
+            int CyclesWithTooMuch = 0, CyclesWithTooLittle = 0;
+
             while (CurrentTime < time)
             {
                 Event nextEvent = Events.Dequeue();
                 var bufferGone = nextEvent.Time - CurrentTime;
-
+               
                 if (nextEvent as BandwidthEvent != null)
                 {
                     BandwidthEvent bandwidthEvent = (BandwidthEvent)nextEvent;
@@ -73,6 +75,21 @@ namespace AISDE_2
                 {
                     DownloadingFinishedEvent downloadingEvent = (DownloadingFinishedEvent)nextEvent;
                     BufferSize -= bufferGone;
+
+                    if (BufferSize < 20)
+                    {
+                        CyclesWithTooLittle++;
+                    }
+                    else
+                    {
+                        CyclesWithTooLittle = 0;
+                    }
+
+                    if(CyclesWithTooLittle > 2)
+                    {
+                        server.SetSmallerVideoSize();
+                        CyclesWithTooLittle = 0;
+                    }
                     BufferSize = BufferSize < 0 ? 0 : BufferSize;
 
                     CurrentTime = downloadingEvent.Time;
@@ -85,9 +102,18 @@ namespace AISDE_2
                         ", bandwidth = " + Bandwidth + ", size = " + server.VideoSize
                     });
 
+                    /// jeżeli nadwyżka bufora jest duża, to zliczaj, jak długo jest taki stan. Jeżeli więcej niż dwa chunki, to zwiększ jakość obrazu
                     var surplus = (BufferSize - 30 > 0) ? BufferSize - 30 : 0;
-                    CurrentTime += surplus;
-                    BufferSize -= surplus;
+                    if (surplus > 0)
+                        CyclesWithTooMuch++;
+                    else
+                        CyclesWithTooMuch = 0;
+
+                    if (CyclesWithTooMuch > 2)
+                    {
+                        server.SetBiggerVideoSize();
+                        CyclesWithTooMuch = 0;
+                    }
 
                     OnLogCreated(new LogEventArgs
                     {
@@ -97,7 +123,7 @@ namespace AISDE_2
 
                     Events.Enqueue(new DownloadingFinishedEvent
                     {
-                        Time = CHUNK_LENGTH * server.VideoSize / Bandwidth + CurrentTime
+                        Time = CHUNK_LENGTH * server.VideoSize / Bandwidth + CurrentTime + surplus
                     });
                 }
 

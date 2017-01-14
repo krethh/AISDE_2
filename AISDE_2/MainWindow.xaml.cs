@@ -21,7 +21,7 @@ namespace AISDE_2
     public partial class MainWindow : Window
     {
         Player simulator;
-        double SimulationTime = 300;
+        double SimulationTime = 500;
 
         public MainWindow()
         {
