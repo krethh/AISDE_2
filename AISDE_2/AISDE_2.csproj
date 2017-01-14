@@ -59,6 +59,7 @@
     <Compile Include="DownloadingFinishedEvent.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="LogEventArgs.cs" />
+    <Compile Include="MeasurementEvent.cs" />
     <Compile Include="PlotWindow.xaml.cs">
       <DependentUpon>PlotWindow.xaml</DependentUpon>
     </Compile>

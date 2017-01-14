@@ -19,15 +19,20 @@ namespace AISDE_2
     /// </summary>
     public partial class PlotWindow : Window
     {
-        public List<Tuple<double,char>> YVector { get; set; }
+        public List<double> YVector { get; set; }
+        /// <summary>
+        /// Długość wektora x (w sekundach), potrzebne do skalowania osi.
+        /// </summary>
+        public double TimeVectorLength { get; set; }
 
-        public PlotWindow(List<Tuple<double, char>> YVector)
+        public PlotWindow(List<double> YVector, double SimulationTime)
         {
             this.YVector = YVector;
+            this.TimeVectorLength = SimulationTime;
             InitializeComponent();
 
             DrawAxes(YVector.Count);
-            DrawGraphPoints();      
+            DrawGraph();      
         }
 
         /// <summary>
@@ -84,12 +89,12 @@ namespace AISDE_2
                 canvas.Children.Add(segment);
             }
 
-            XAxisEndLabel.Content = (YVectorSize*2).ToString() + " sek.";
-            XAxisMiddleLabel.Content = (YVectorSize).ToString() + " sek.";
+            XAxisEndLabel.Content = (TimeVectorLength).ToString() + " sek.";
+            XAxisMiddleLabel.Content = (TimeVectorLength / 2).ToString() + " sek.";
             YAxisTopLabel.Content = "30 sek.";
         }
 
-        private void DrawGraphPoints()
+        private void DrawGraph()
         {
             var xSeparation = 640/(double) YVector.Count;
             int YVectorIndex = 0;
@@ -97,15 +102,37 @@ namespace AISDE_2
             for(double i = 30; i < 665; i += xSeparation) // 665 żeby wyeliminować błędy zaokrąglania (zamiast 670 na końcu byłoby 669.9999992 i powodowałoby Index out of bounds)
             {
                 Ellipse point = new Ellipse();
-                point.Height = 5;
-                point.Width = 5;
+                point.Height = 2;
+                point.Width = 2;
 
-                point.Fill = YVector[YVectorIndex].Item2 == 'd' ? Brushes.Red : Brushes.Blue;
+                point.Fill = Brushes.Transparent;
 
                 canvas.Children.Add(point);
 
                 Canvas.SetLeft(point, i);
-                Canvas.SetTop(point, 30 + (30 - YVector[YVectorIndex++].Item1) * (640 / 30));
+                Canvas.SetTop(point, 30 + (30 - YVector[YVectorIndex++]) * (640 / 30));
+            }
+
+            /// rysuje linie wykresu
+            int n = canvas.Children.Count - 1;
+
+            for (int i = 0; i < n; i++)
+            {
+                if (canvas.Children[i] as Ellipse == null)
+                    continue;
+
+                var point1 = canvas.Children[i] as Ellipse;
+                var point2 = canvas.Children[i + 1] as Ellipse;
+
+                Line line = new Line();
+                line.X1 = Canvas.GetLeft(point1);
+                line.Y1 = Canvas.GetTop(point1);
+
+                line.X2 = Canvas.GetLeft(point2);
+                line.Y2 = Canvas.GetTop(point2);
+                line.Stroke = Brushes.Red;
+                line.StrokeThickness = 1;
+                canvas.Children.Add(line);
             }
         }
     }

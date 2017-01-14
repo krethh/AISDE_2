@@ -21,13 +21,14 @@ namespace AISDE_2
     public partial class MainWindow : Window
     {
         Player simulator;
+        double SimulationTime = 300;
 
         public MainWindow()
         {
             InitializeComponent();
             simulator = new Player();
             simulator.LogCreated += UpdateLogWindow;
-            simulator.Simulate(300);
+            simulator.Simulate(SimulationTime);
         }
 
         private void UpdateLogWindow(object sender, LogEventArgs e)
@@ -37,7 +38,7 @@ namespace AISDE_2
 
         private void PlotButton_Click(object sender, RoutedEventArgs e)
         {
-            PlotWindow w = new PlotWindow(simulator.YGraphValues);
+            PlotWindow w = new PlotWindow(simulator.YGraphValues, SimulationTime);
             w.Show();
         }
     }

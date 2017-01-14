@@ -17,8 +17,9 @@ namespace AISDE_2
         public double Bandwidth { get; set; } // ile możemy pobrać na sekundę
         public double VideoStreamSize { get; set; } // ile kilobajtów to jedna sekunda
         public double BufferSize { get; set; } // ile sekund video mamy już zbuforowane
+        public double MeasurementSamplingRate { get; set; } = 0.2; // co ile zbieramy próbki z bufora
         public const double CHUNK_LENGTH = 2;
-        public List<Tuple<double, char>> YGraphValues { get; set; } // tak aby w wykresie było wiadomo czy dany pomiar jest przy okazji pobrania 'd' czy zmiany przepustowości 'b'
+        public List<double> YGraphValues { get; set; }
         public EventHandler<LogEventArgs> LogCreated;
 
         public Player()
@@ -27,7 +28,7 @@ namespace AISDE_2
             CurrentTime = 0;
             Bandwidth = 300; //domyślna przepustowość łącza
             BufferSize = 0;
-            YGraphValues = new List<Tuple<double, char>>();
+            YGraphValues = new List<double>();
             Console.WriteLine();
         }
 
@@ -38,6 +39,7 @@ namespace AISDE_2
 
             Events.Enqueue(new BandwidthEvent { Time = RandomNumberFromExpDistribution(5), BandwidthChange = BandwidthEvent.NextBandwidthChange() });
             Events.Enqueue(new DownloadingFinishedEvent { Time = CHUNK_LENGTH * server.VideoSize / Bandwidth });
+            Events.Enqueue(new MeasurementEvent { Time = 0 });
 
             while (CurrentTime < time)
             {
@@ -52,11 +54,12 @@ namespace AISDE_2
 
                     CurrentTime = bandwidthEvent.Time;
                     Bandwidth += bandwidthEvent.BandwidthChange;
-                    YGraphValues.Add(new Tuple<double,char>( BufferSize, 'b'));
+                    YGraphValues.Add(BufferSize);
 
                     OnLogCreated(new LogEventArgs
                     {
-                        Message = "Bandwidth change, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
+                        Message = "Bandwidth change, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) +
+                        ", bandwidth = " + Bandwidth + ", size = " + server.VideoSize
                     });
 
                     Events.Enqueue(new BandwidthEvent
@@ -74,11 +77,12 @@ namespace AISDE_2
 
                     CurrentTime = downloadingEvent.Time;
                     BufferSize += CHUNK_LENGTH;
-                    YGraphValues.Add(new Tuple<double, char>(BufferSize, 'd'));
+                    YGraphValues.Add(BufferSize);
 
                     OnLogCreated(new LogEventArgs
                     {
-                        Message = "Downloaded, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
+                        Message = "Downloaded, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) +
+                        ", bandwidth = " + Bandwidth + ", size = " + server.VideoSize
                     });
 
                     var surplus = (BufferSize - 30 > 0) ? BufferSize - 30 : 0;
@@ -87,12 +91,27 @@ namespace AISDE_2
 
                     OnLogCreated(new LogEventArgs
                     {
-                        Message = "Request, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) + ", bandwidth = " + Bandwidth
+                        Message = "Request, time = " + Truncate(CurrentTime.ToString()) + ", buffer = " + Truncate(BufferSize.ToString()) +
+                        ", bandwidth = " + Bandwidth + ", size = " + server.VideoSize
                     });
 
                     Events.Enqueue(new DownloadingFinishedEvent
                     {
                         Time = CHUNK_LENGTH * server.VideoSize / Bandwidth + CurrentTime
+                    });
+                }
+
+                else if (nextEvent as MeasurementEvent != null)
+                {
+                    MeasurementEvent measurementEvent = (MeasurementEvent)nextEvent;
+                    BufferSize -= bufferGone;
+                    BufferSize = BufferSize < 0 ? 0 : BufferSize;
+
+                    CurrentTime = measurementEvent.Time;
+                    YGraphValues.Add(BufferSize);
+                    Events.Enqueue(new MeasurementEvent
+                    {
+                        Time = CurrentTime + MeasurementSamplingRate
                     });
                 }
             }
