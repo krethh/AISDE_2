@@ -20,6 +20,8 @@ namespace AISDE_2
         public double MeasurementSamplingRate { get; set; } = 0.05; // co ile zbieramy próbki z bufora
         public const double CHUNK_LENGTH = 2;
         public List<double> YGraphValues { get; set; }
+        public List<double> BandwidthValues { get; set; } = new List<double>();
+        public List<double> SegmentSizeValues { get; set; } = new List<double>();
         public EventHandler<LogEventArgs> LogCreated;
 
         public Player()
@@ -56,7 +58,6 @@ namespace AISDE_2
 
                     CurrentTime = bandwidthEvent.Time;
                     Bandwidth += bandwidthEvent.BandwidthChange;
-                    YGraphValues.Add(BufferSize);
 
                     OnLogCreated(new LogEventArgs
                     {
@@ -76,7 +77,7 @@ namespace AISDE_2
                     DownloadingFinishedEvent downloadingEvent = (DownloadingFinishedEvent)nextEvent;
                     BufferSize -= bufferGone;
 
-                    if (BufferSize < 20)
+                    if (BufferSize < 10)
                     {
                         CyclesWithTooLittle++;
                     }
@@ -94,7 +95,6 @@ namespace AISDE_2
 
                     CurrentTime = downloadingEvent.Time;
                     BufferSize += CHUNK_LENGTH;
-                    YGraphValues.Add(BufferSize);
 
                     OnLogCreated(new LogEventArgs
                     {
@@ -135,6 +135,9 @@ namespace AISDE_2
 
                     CurrentTime = measurementEvent.Time;
                     YGraphValues.Add(BufferSize);
+                    BandwidthValues.Add(Bandwidth);
+                    SegmentSizeValues.Add(server.VideoSize);
+                    
                     Events.Enqueue(new MeasurementEvent
                     {
                         Time = CurrentTime + MeasurementSamplingRate

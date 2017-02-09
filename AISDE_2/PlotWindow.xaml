@@ -9,7 +9,7 @@
     <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="749" Margin="87,72,0,0" VerticalAlignment="Top" Width="772" Grid.ColumnSpan="6" Background="White">
         <Label x:Name="XAxisEndLabel" Content="Label" Canvas.Left="672" Canvas.Top="683"/>
         <Label x:Name="XAxisMiddleLabel" Content="Label" Canvas.Left="340" Canvas.Top="683"/>
-        <Label x:Name="YAxisTopLabel" Content="Label" Canvas.Left="61" Canvas.Top="30"/>
+        <Label x:Name="YAxisTopLabel" Content="Label" Canvas.Left="10" Canvas.Top="10"/>
     </Canvas>
 
 </Window>

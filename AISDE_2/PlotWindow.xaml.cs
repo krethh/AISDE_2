@@ -20,14 +20,18 @@ namespace AISDE_2
     public partial class PlotWindow : Window
     {
         public List<double> YVector { get; set; }
+        public List<double> BandwidthVector { get; set; } 
+        public List<double> SegmentSizeVector { get; set; }
         /// <summary>
         /// Długość wektora x (w sekundach), potrzebne do skalowania osi.
         /// </summary>
         public double TimeVectorLength { get; set; }
 
-        public PlotWindow(List<double> YVector, double SimulationTime)
+        public PlotWindow(List<double> YVector, List<double> BandwidthVector, List<double> SegmentSizeVector, double SimulationTime)
         {
             this.YVector = YVector;
+            this.BandwidthVector = BandwidthVector;
+            this.SegmentSizeVector = SegmentSizeVector;
             this.TimeVectorLength = SimulationTime;
             InitializeComponent();
 
@@ -91,7 +95,7 @@ namespace AISDE_2
 
             XAxisEndLabel.Content = (TimeVectorLength).ToString() + " sek.";
             XAxisMiddleLabel.Content = (TimeVectorLength / 2).ToString() + " sek.";
-            YAxisTopLabel.Content = "30 sek.";
+            YAxisTopLabel.Content = "30 sek. 2000 kB/s";
         }
 
         private void DrawGraph()
@@ -113,7 +117,7 @@ namespace AISDE_2
                 Canvas.SetTop(point, 30 + (30 - YVector[YVectorIndex++]) * (640 / 30));
             }
 
-            /// rysuje linie wykresu
+            /// rysuje wykres bufora
             int n = canvas.Children.Count - 1;
 
             for (int i = 0; i < n; i++)
@@ -134,6 +138,71 @@ namespace AISDE_2
                 line.StrokeThickness = 1;
                 canvas.Children.Add(line);
             }
+
+            xSeparation = 640 / (double)BandwidthVector.Count;
+            YVectorIndex = 0;
+            double scalingFactor = (double) 640 / 2000;
+            Point previousPoint = new Point();
+
+            for (double i = 30; i < 665; i += xSeparation) // 665 żeby wyeliminować błędy zaokrąglania (zamiast 670 na końcu byłoby 669.9999992 i powodowałoby Index out of bounds)
+            {
+
+                double yPos = 30 + (2000 - BandwidthVector[YVectorIndex++]) *scalingFactor;
+
+                /// w pierwszej i ostatniej pętli nie rysuj
+                if (i == 30)
+                {
+                    previousPoint.X = i;
+                    previousPoint.Y = yPos;
+                }
+                else
+                {
+                    Line line = new Line();
+                    line.X1 = previousPoint.X;
+                    line.Y1 = previousPoint.Y;
+
+                    line.X2 = i;
+                    line.Y2 = yPos;
+                    line.Stroke = Brushes.Blue;
+                    line.StrokeThickness = 1.2;
+                    canvas.Children.Add(line);
+
+                    previousPoint.X = i;
+                    previousPoint.Y = yPos;
+                }             
+            }
+
+            YVectorIndex = 0;
+            previousPoint = new Point();
+
+            for (double i = 30; i < 665; i += xSeparation) // 665 żeby wyeliminować błędy zaokrąglania (zamiast 670 na końcu byłoby 669.9999992 i powodowałoby Index out of bounds)
+            {
+
+                double yPos = 30 + (2000 - SegmentSizeVector[YVectorIndex++]) * scalingFactor;
+
+                if (i == 30)
+                {
+                    previousPoint.X = i;
+                    previousPoint.Y = yPos;
+                }
+                else
+                {
+                    Line line = new Line();
+                    line.X1 = previousPoint.X;
+                    line.Y1 = previousPoint.Y;
+
+                    line.X2 = i;
+                    line.Y2 = yPos;
+                    
+                    line.Stroke = Brushes.Green;
+                    line.StrokeThickness = 1.2;
+                    canvas.Children.Add(line);
+
+                    previousPoint.X = i;
+                    previousPoint.Y = yPos;
+                }
+            }
+
         }
     }
 }

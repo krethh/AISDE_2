@@ -21,7 +21,7 @@ namespace AISDE_2
     public partial class MainWindow : Window
     {
         Player simulator;
-        double SimulationTime = 500;
+        double SimulationTime = 250;
 
         public MainWindow()
         {
@@ -38,7 +38,7 @@ namespace AISDE_2
 
         private void PlotButton_Click(object sender, RoutedEventArgs e)
         {
-            PlotWindow w = new PlotWindow(simulator.YGraphValues, SimulationTime);
+            PlotWindow w = new PlotWindow(simulator.YGraphValues, simulator.BandwidthValues, simulator.SegmentSizeValues, SimulationTime);
             w.Show();
         }
     }
